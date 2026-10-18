@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidentialité — EquilibreCuisine</title>
+<meta name="description" content="Politique de confidentialité de l'application Android EquilibreCuisine.">
+<style>
+  :root { --bg:#fbf8f1; --fg:#1d2419; --muted:#5b6457; --accent:#2e7d4f; --card:#ffffff; --line:#e4e0d4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12150f; --fg:#e8ece4; --muted:#a8b1a2; --accent:#8fd3a4; --card:#1b1f17; --line:#2c3328; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  a { color: var(--accent); }
+  h1 { font-size: 1.9rem; line-height:1.2; margin: 8px 0 4px; }
+  h2 { font-size: 1.2rem; margin: 32px 0 8px; }
+  .muted { color: var(--muted); }
+  section { background: var(--card); border:1px solid var(--line); border-radius: 18px; padding: 4px 20px 16px; margin-top: 18px; }
+  table { width:100%; border-collapse: collapse; font-size: .95rem; }
+  td, th { text-align:left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← EquilibreCuisine</a></p>
+  <h1>Politique de confidentialité</h1>
+  <p class="muted">Application Android EquilibreCuisine · en vigueur le 18 octobre 2026</p>
+
+  <section>
+    <h2>En résumé</h2>
+    <ul>
+      <li>La version gratuite fonctionne <strong>sans compte</strong> : vos recettes, favoris, planning, liste de courses et prix restent <strong>sur votre téléphone</strong>.</li>
+      <li>Aucune publicité, aucun outil de mesure d'audience, aucune revente de données.</li>
+      <li>Les données ne quittent le téléphone que pour les fonctions en ligne décrites ci-dessous, dont les fonctions Premium que vous choisissez d'utiliser.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Version gratuite</h2>
+    <p>Les données que vous saisissez (recettes, ingrédients, prix, favoris, planning, liste de courses, photos de recettes, réglages) sont enregistrées uniquement dans la mémoire de l'application. Elles peuvent être incluses dans la sauvegarde Android de votre compte Google si vous l'avez activée dans les réglages du téléphone.</p>
+    <p>Deux fonctions facultatives se connectent à Internet, sans transmettre vos données personnelles :</p>
+    <table>
+      <tr><th>Fonction</th><th>Service contacté</th><th>Ce qui est envoyé</th></tr>
+      <tr><td>Nouvelles recettes de la semaine</td><td>GitHub Pages (GitHub, Inc.)</td><td>Une simple demande de téléchargement du fichier de recettes</td></tr>
+      <tr><td>Mise à jour automatique des prix</td><td>Open Prices (Open Food Facts) ou l'API de prix que vous avez configurée</td><td>Le nom de la catégorie de produit recherchée (ex. « carottes »)</td></tr>
+    </table>
+    <p class="muted">Comme pour toute connexion Internet, ces services reçoivent techniquement l'adresse IP de l'appareil. Ces deux fonctions se désactivent dans Réglages.</p>
+  </section>
+
+  <section>
+    <h2>Abonnement Premium</h2>
+    <p><strong>Paiement.</strong> L'abonnement est vendu et encaissé par Google Play. Nous ne recevons jamais vos coordonnées bancaires, votre nom ni votre adresse e-mail. Nous recevons de Google uniquement l'état de l'abonnement (actif, formule, date de fin) associé à un jeton d'achat.</p>
+    <p><strong>Identifiant anonyme.</strong> L'application crée un identifiant aléatoire, enregistré par Google Play avec votre achat. Il permet de retrouver vos données cloud sur un nouveau téléphone (« Restaurer mes achats ») sans créer de compte.</p>
+    <table>
+      <tr><th>Fonction Premium</th><th>Données transmises</th><th>Conservation</th></tr>
+      <tr><td>Recettes créées par l'IA</td><td>Votre demande (texte), la liste des noms d'ingrédients de votre bibliothèque</td><td>Non conservées par nos serveurs</td></tr>
+      <tr><td>Import depuis une adresse web</td><td>L'adresse de la page ; notre serveur lit la page publique correspondante</td><td>Non conservées</td></tr>
+      <tr><td>Analyse d'une photo de plat</td><td>La photo choisie ou prise (réduite à 1280 px)</td><td>Non conservée par nos serveurs</td></tr>
+      <tr><td>Suggestions personnalisées</td><td>Titres, catégories, calories, coûts et durées de vos recettes ; favoris ; repas planifiés ; profil (foyer, objectif calorique, budget)</td><td>Non conservées</td></tr>
+      <tr><td>Synchronisation et sauvegardes</td><td>Votre bibliothèque complète (recettes, ingrédients, prix, favoris, planning), hors photos ; nom du modèle de téléphone</td><td>Jusqu'à leur suppression par vous ; 10 sauvegardes au plus</td></tr>
+    </table>
+    <p><strong>Traitement par l'IA.</strong> Les fonctions d'IA sont fournies par Anthropic (API Claude), qui traite les demandes pour notre compte afin de produire la réponse. Selon ses conditions commerciales, Anthropic n'utilise pas ces données pour entraîner ses modèles.</p>
+    <p><strong>Hébergement.</strong> Le serveur Premium fonctionne sur Cloudflare (Workers et base de données D1). Toutes les communications sont chiffrées (HTTPS). Nous conservons aussi un compteur d'utilisation quotidien des fonctions IA, qui sert à appliquer les limites d'usage.</p>
+  </section>
+
+  <section>
+    <h2>Autorisations Android</h2>
+    <table>
+      <tr><td>Internet, état du réseau</td><td>Fonctions en ligne ci-dessus ; affichage du mode hors connexion</td></tr>
+      <tr><td>Notifications</td><td>Nouvelles recettes et fin du minuteur, seulement si vous les activez</td></tr>
+      <tr><td>Vibration</td><td>Fin d'un minuteur du mode cuisine</td></tr>
+      <tr><td>Facturation Google Play</td><td>Abonnement Premium</td></tr>
+    </table>
+    <p class="muted">L'application ne demande pas l'accès à l'appareil photo : la prise de photo passe par l'application Appareil photo de votre téléphone, et seule l'image que vous validez est utilisée. Aucune localisation, aucun contact.</p>
+  </section>
+
+  <section>
+    <h2>Vos droits</h2>
+    <p>Vous pouvez à tout moment :</p>
+    <ul>
+      <li>effacer toutes vos données cloud depuis l'application : Premium › Cloud et sauvegardes › « Effacer mes données du cloud » ;</li>
+      <li>supprimer les données locales en désinstallant l'application ou en effaçant ses données dans les réglages Android ;</li>
+      <li>résilier l'abonnement dans Google Play › Paiements et abonnements.</li>
+    </ul>
+    <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement et de portabilité (l'export JSON de l'application permet de récupérer toute votre bibliothèque). Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+  </section>
+
+  <section>
+    <h2>Enfants</h2>
+    <p>L'application s'adresse à un public général et n'est pas conçue pour les enfants de moins de 13 ans. Elle ne collecte sciemment aucune donnée concernant des enfants.</p>
+  </section>
+
+  <section>
+    <h2>Contact et modifications</h2>
+    <p>Pour toute question, utilisez l'adresse e-mail de contact affichée sur la fiche Google Play de l'application. En cas de modification de cette politique, la date ci-dessus est mise à jour.</p>
+  </section>
+</main>
+</body>
+</html>

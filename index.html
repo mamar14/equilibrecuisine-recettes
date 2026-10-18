@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EquilibreCuisine</title>
+<meta name="description" content="Recettes équilibrées, prix de revient au centime près, planning et liste de courses. Application Android gratuite, sans compte, hors connexion.">
+<link rel="icon" href="img/icone.png">
+<meta property="og:title" content="EquilibreCuisine — recettes équilibrées et prix de revient">
+<meta property="og:image" content="img/icone.png">
+<style>
+  :root { --bg:#fbf8f1; --fg:#1d2419; --muted:#5b6457; --green:#2e7d4f; --green-soft:#d6f0de; --orange:#c96f1b; --card:#fff; --line:#e4e0d4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12150f; --fg:#e8ece4; --muted:#a8b1a2; --green:#8fd3a4; --green-soft:#1f5636; --orange:#f5b26b; --card:#1b1f17; --line:#2c3328; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 16px; }
+  header { padding:40px 0 24px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  header img { width:84px; height:84px; border-radius:22px; }
+  h1 { font-size:clamp(2rem,6vw,3rem); line-height:1.05; margin:0; letter-spacing:-.02em; }
+  .tag { color:var(--muted); margin:6px 0 0; }
+  .cta { display:flex; gap:12px; flex-wrap:wrap; margin:20px 0 8px; }
+  .btn { display:inline-flex; align-items:center; gap:10px; padding:14px 22px; border-radius:16px; font-weight:700; text-decoration:none; }
+  .primary { background:var(--green); color:#fff; }
+  @media (prefers-color-scheme: dark) { .primary { color:#0e2a19; } }
+  .ghost { border:2px solid var(--line); color:var(--fg); }
+  .small { font-size:.88rem; color:var(--muted); }
+  .shots { display:flex; gap:14px; overflow-x:auto; padding:16px 0 20px; scroll-snap-type:x mandatory; }
+  .shots img { width:210px; height:auto; border-radius:22px; border:1px solid var(--line); scroll-snap-align:start; flex:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin:12px 0 32px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:18px; }
+  .card h3 { margin:0 0 4px; font-size:1.05rem; }
+  .card p { margin:0; color:var(--muted); font-size:.95rem; }
+  .premium { background:linear-gradient(135deg,#f2c14e,#d9932b); color:#3a2600; border:none; }
+  .premium p { color:#3a2600; }
+  h2 { font-size:1.5rem; margin:32px 0 8px; }
+  ol li { margin:6px 0; }
+  footer { border-top:1px solid var(--line); padding:24px 0 48px; margin-top:24px; color:var(--muted); font-size:.9rem; }
+  footer a { color:var(--green); }
+  code { font-size:.8rem; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="img/icone.png" alt="">
+    <div>
+      <h1>EquilibreCuisine</h1>
+      <p class="tag">Recettes équilibrées, prix de revient au centime près, planning et liste de courses.</p>
+    </div>
+  </header>
+
+  <p>Plus de 200 recettes détaillées, 10 nouvelles chaque semaine, le coût de chaque portion calculé automatiquement, un mode cuisine pas à pas avec minuteur. <strong>Gratuit, sans compte, et tout fonctionne hors connexion.</strong></p>
+
+  <div class="cta">
+    <a class="btn primary" href="app/EquilibreCuisine.apk" download>⬇ Télécharger l'APK (Android 8+)</a>
+    <a class="btn ghost" href="#installer">Comment l'installer</a>
+  </div>
+  <p class="small">Version 2.1.0 · 3 Mo · bientôt sur Google Play</p>
+
+  <div class="shots" aria-label="Captures d'écran">
+    <img src="img/1_accueil.jpg" alt="Accueil : recettes du jour" loading="lazy">
+    <img src="img/3_fiche.jpg" alt="Fiche recette avec prix par portion" loading="lazy">
+    <img src="img/4_mode_cuisine.jpg" alt="Mode cuisine, une étape à la fois" loading="lazy">
+    <img src="img/5_planning.jpg" alt="Planning de la semaine avec calories et budget" loading="lazy">
+    <img src="img/6_courses.jpg" alt="Liste de courses consolidée" loading="lazy">
+    <img src="img/8_premium.jpg" alt="Abonnement Premium" loading="lazy">
+  </div>
+
+  <h2>Tout ce qui est gratuit</h2>
+  <div class="grid">
+    <div class="card"><h3>💶 Prix de revient</h3><p>Coût total et par portion, mis à jour avec vos prix ou ceux relevés en France (Open Prices).</p></div>
+    <div class="card"><h3>🥗 Score d'équilibre</h3><p>Calories, protéines, glucides, lipides et fibres par portion, avec un score sur 100.</p></div>
+    <div class="card"><h3>📅 Planning et courses</h3><p>Semaine remplie en un geste selon votre budget et vos calories ; liste de courses consolidée.</p></div>
+    <div class="card"><h3>👩‍🍳 Mode cuisine</h3><p>Une étape à la fois, minuteurs intégrés, écran toujours allumé, gros caractères.</p></div>
+    <div class="card"><h3>🆕 Nouveautés chaque semaine</h3><p>10 nouvelles recettes détaillées tous les lundis, même hors connexion.</p></div>
+    <div class="card"><h3>✏️ Vos recettes</h3><p>Créez, modifiez, classez, importez et exportez votre bibliothèque. Vos données restent sur votre téléphone.</p></div>
+  </div>
+
+  <h2>Premium</h2>
+  <div class="grid">
+    <div class="card premium"><h3>✨ Pour aller plus loin</h3><p>Recettes créées par l'IA, import depuis une adresse web, analyse d'une photo de plat, suggestions personnalisées, synchronisation cloud et sauvegardes automatiques. 3,99 €/mois ou 29,99 €/an, sans engagement.</p></div>
+  </div>
+
+  <h2 id="installer">Installer l'APK</h2>
+  <ol>
+    <li>Sur votre téléphone Android, touchez « Télécharger l'APK » ci-dessus.</li>
+    <li>Ouvrez le fichier téléchargé. Si Android le demande, autorisez votre navigateur à « installer des applications inconnues ».</li>
+    <li>Touchez « Installer », puis « Ouvrir ».</li>
+  </ol>
+  <p class="small">L'abonnement Premium ne peut être souscrit que depuis la version Google Play. Empreinte SHA-256 du fichier : <code>4fea6c1001f23f4e299a01ca2dd78c578eabfe9e84e39636320bfcf614a422a7</code></p>
+
+  <footer>
+    <a href="confidentialite.html">Politique de confidentialité</a> · Recettes de la semaine : <a href="index.json">flux JSON</a>
+  </footer>
+</div>
+</body>
+</html>
