@@ -12,6 +12,8 @@ export interface Env {
   QUOTA_SYNC: string;
   QUOTA_BACKUP: string;
   MAX_BACKUPS: string;
+  /** SHA-256 du code d'accès (examinateurs Google Play, tests). Vide = codes désactivés. */
+  ACCESS_CODE_SHA256?: string;
   // Secrets
   ANTHROPIC_API_KEY: string;
   GOOGLE_SERVICE_ACCOUNT: string;

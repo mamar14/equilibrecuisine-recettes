@@ -7,9 +7,9 @@
  * ni mot de passe.
  */
 import { evaluateSubscription, isEntitledState, planOf, type Entitlement } from "./entitlement.ts";
-import { randomToken, sha256Hex } from "./crypto.ts";
+import { randomToken, safeEqual, sha256Hex } from "./crypto.ts";
 import type { Env } from "./env.ts";
-import { Errors } from "./http.ts";
+import { ApiError, Errors } from "./http.ts";
 import type { PlayClient } from "./google.ts";
 
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -100,6 +100,37 @@ export async function refreshFromGoogle(
   return { entitlement: e, userId, acknowledged };
 }
 
+/** Accès par code (examinateurs Google Play) : ligne d'abonnement sans achat Google derrière. */
+export const ACCESS_CODE_PREFIX = "code:";
+export const ACCESS_CODE_TTL_MS = 30 * 24 * 3600 * 1000;
+
+export function normalizeAccessCode(code: string): string {
+  return code.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+}
+
+/** Vérifie un code d'accès et accorde le Premium pour 30 jours à cet identifiant de compte. */
+export async function redeemAccessCode(env: Env, code: string, accountId: string, nowMs: number): Promise<PremiumStatus> {
+  const expected = (env.ACCESS_CODE_SHA256 ?? "").trim().toLowerCase();
+  const normalized = normalizeAccessCode(code);
+  if (!expected || normalized.length < 12 || !safeEqual(await sha256Hex(normalized), expected)) {
+    throw new ApiError(403, "invalid_code", "Code d'accès invalide.");
+  }
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(accountId)) throw Errors.badRequest("Identifiant d'appareil invalide.");
+  const e: Entitlement = {
+    entitled: true,
+    state: "SUBSCRIPTION_STATE_ACTIVE",
+    expiryMs: nowMs + ACCESS_CODE_TTL_MS,
+    basePlanId: null,
+    autoRenewing: false,
+    needsAcknowledge: false,
+    accountId,
+    linkedPurchaseToken: null,
+    testPurchase: true
+  };
+  await saveSubscription(env, ACCESS_CODE_PREFIX + accountId, accountId, e, nowMs);
+  return statusOf(env, await latestSubscription(env, accountId), nowMs);
+}
+
 export function statusOf(env: Env, row: SubscriptionRow | null, nowMs: number): PremiumStatus {
   if (!row) return { premium: false, plan: "unknown", state: "NONE", expiresAt: 0, autoRenewing: false };
   return {
@@ -153,8 +184,10 @@ export async function authenticate(env: Env, request: Request, nowMs: number): P
  */
 export async function requirePremium(env: Env, play: PlayClient, userId: string, nowMs: number): Promise<PremiumStatus> {
   let row = await latestSubscription(env, userId);
+  // Codes d'accès désactivés (variable vidée) : l'accès par code s'arrête immédiatement.
+  if (row?.purchase_token.startsWith(ACCESS_CODE_PREFIX) && !env.ACCESS_CODE_SHA256) throw Errors.premiumRequired();
   let status = statusOf(env, row, nowMs);
-  if (!status.premium && row && nowMs - row.checked_at > RECHECK_MS && row.state !== "SUBSCRIPTION_STATE_EXPIRED") {
+  if (!status.premium && row && !row.purchase_token.startsWith(ACCESS_CODE_PREFIX) && nowMs - row.checked_at > RECHECK_MS && row.state !== "SUBSCRIPTION_STATE_EXPIRED") {
     await refreshFromGoogle(env, play, row.purchase_token, nowMs);
     row = await latestSubscription(env, userId);
     status = statusOf(env, row, nowMs);

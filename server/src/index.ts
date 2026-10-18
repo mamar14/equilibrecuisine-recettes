@@ -6,7 +6,7 @@
  * appel, côté serveur : modifier l'application ne permet pas de contourner le paiement.
  */
 import {
-  authenticate, createSession, latestSubscription, refreshFromGoogle, requirePremium, statusOf
+  authenticate, createSession, latestSubscription, redeemAccessCode, refreshFromGoogle, requirePremium, statusOf
 } from "./accounts.ts";
 import { analyzePhoto, generateRecipe, importFromUrl, suggest, validatePhoto } from "./ai.ts";
 import { validatePublicUrl } from "./urlImport.ts";
@@ -60,6 +60,14 @@ export function createHandler(deps: Deps = defaultDeps) {
         if (!e.entitled) return json(status);
         const session = await createSession(env, userId, now);
         return json({ ...status, sessionToken: session.token, sessionExpiresAt: session.expiresAt });
+      }
+
+      // Code d'accès (examinateurs Google Play) : Premium pendant 30 jours pour cet appareil.
+      if (path === "/v1/access-code" && method === "POST") {
+        const body = await readJson<Record<string, unknown>>(request, SMALL_BODY);
+        const status = await redeemAccessCode(env, str(body.code, 100), str(body.accountId, 64), now);
+        const session = await createSession(env, str(body.accountId, 64), now);
+        return json({ ...status, acknowledged: true, sessionToken: session.token, sessionExpiresAt: session.expiresAt });
       }
 
       // Notifications Google Play en temps réel (Pub/Sub, abonnement « push »).

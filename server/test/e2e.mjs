@@ -2,6 +2,7 @@
  * Test de bout en bout : le Worker tourne localement (wrangler dev, D1 locale) et Google Play + Claude
  * sont simulés par un petit serveur. Lancer avec `npm run test:e2e`.
  */
+import { createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:http";
 import { generateKeyPairSync } from "node:crypto";
@@ -78,7 +79,9 @@ writeFileSync(".dev.vars", [
   `RTDN_TOKEN="secret-rtdn-test"`,
   `GOOGLE_API_BASE="http://127.0.0.1:${MOCK_PORT}"`,
   `ANTHROPIC_API_BASE="http://127.0.0.1:${MOCK_PORT}"`,
-  `QUOTA_PHOTO="2"`
+  `QUOTA_PHOTO="2"`,
+  // Code de test « TEST-CODE-ACCES-1 » (le vrai code n'est jamais dans le dépôt)
+  `ACCESS_CODE_SHA256="${createHash("sha256").update("TEST-CODE-ACCES-1").digest("hex")}"`
 ].join("\n"));
 
 let worker;
@@ -135,6 +138,17 @@ async function main() {
   assert.equal(me.body.premium, true);
   assert.equal(me.body.usage.photo.limit, 2);
   step("/v1/me");
+
+  // Code d'accès des examinateurs
+  assert.equal((await call("POST", "/v1/access-code", { code: "MAUVAIS-CODE-000", accountId: "acc-review-0001" })).status, 403);
+  const rc = await call("POST", "/v1/access-code", { code: " test-code-acces-1 ", accountId: "acc-review-0001" });
+  assert.equal(rc.status, 200, JSON.stringify(rc.body));
+  assert.equal(rc.body.premium, true);
+  const reviewMe = await call("GET", "/v1/me", undefined, rc.body.sessionToken);
+  assert.equal(reviewMe.body.premium, true);
+  const reviewSync = await call("GET", "/v1/sync", undefined, rc.body.sessionToken);
+  assert.equal(reviewSync.status, 200, JSON.stringify(reviewSync.body));
+  step("code d'accès : mauvais code refusé, bon code → Premium");
 
   const gen = await call("POST", "/v1/ai/recipe", { prompt: "soupe d'automne", servings: 4, knownIngredients: ["Oignon jaune"] }, token);
   assert.equal(gen.status, 200, JSON.stringify(gen.body));

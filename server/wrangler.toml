@@ -22,6 +22,9 @@ QUOTA_SUGGEST = "8"
 QUOTA_SYNC = "60"
 QUOTA_BACKUP = "12"
 MAX_BACKUPS = "10"
+# Code d'accès Premium des examinateurs Google Play : seule son empreinte SHA-256 figure ici.
+# Vider la valeur désactive immédiatement tous les accès par code.
+ACCESS_CODE_SHA256 = "8b1cabec2738199866cbd5acc6610b96a80f8b2daa64bc29192f35d9da0ced1b"
 
 # Base D1 : `npx wrangler d1 create equilibrecuisine`, puis coller l'identifiant affiché.
 [[d1_databases]]
