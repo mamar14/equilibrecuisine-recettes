@@ -1,0 +1,33 @@
+# Serveur Premium d'EquilibreCuisine — voir DEPLOIEMENT.md
+name = "equilibrecuisine-premium"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Aucun appel n'atteint ce serveur depuis la version gratuite de l'application.
+[vars]
+PACKAGE_NAME = "com.equilibrecuisine.app"
+# Abonnement Google Play (Play Console > Monétiser > Abonnements) et ses deux formules de base.
+PRODUCT_ID = "premium"
+BASE_PLAN_MONTHLY = "mensuel"
+BASE_PLAN_YEARLY = "annuel"
+# Modèle Claude : Haiku = coût minimal. claude-sonnet-5-5 pour des recettes plus fines (≈ 20× plus cher).
+CLAUDE_MODEL = "claude-haiku-5-5"
+# Quotas quotidiens par abonné : protègent la marge (3,99 €/mois) contre un usage abusif.
+QUOTA_RECIPE = "15"
+QUOTA_IMPORT = "20"
+QUOTA_PHOTO = "8"
+QUOTA_SUGGEST = "8"
+QUOTA_SYNC = "60"
+QUOTA_BACKUP = "12"
+MAX_BACKUPS = "10"
+
+# Base D1 : `npx wrangler d1 create equilibrecuisine`, puis coller l'identifiant affiché.
+[[d1_databases]]
+binding = "DB"
+database_name = "equilibrecuisine"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# Secrets (jamais dans ce fichier) :
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put GOOGLE_SERVICE_ACCOUNT   (contenu du fichier JSON du compte de service)
+#   npx wrangler secret put RTDN_TOKEN               (chaîne aléatoire, aussi mise dans l'URL Pub/Sub)

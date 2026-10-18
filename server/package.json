@@ -1,0 +1,21 @@
+{
+  "name": "equilibrecuisine-premium",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serveur Premium d'EquilibreCuisine (Cloudflare Worker) : vérification des abonnements Google Play, IA Claude, synchronisation et sauvegardes.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:e2e": "node test/e2e.mjs",
+    "db:init": "wrangler d1 execute equilibrecuisine --remote --file=schema.sql",
+    "db:init:local": "wrangler d1 execute equilibrecuisine --local --file=schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261018.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.151.1"
+  }
+}

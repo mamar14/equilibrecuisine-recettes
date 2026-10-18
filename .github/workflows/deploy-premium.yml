@@ -1,0 +1,102 @@
+# Déploie le serveur Premium d'EquilibreCuisine sur Cloudflare (Workers + D1).
+# Lancement : onglet Actions › « Déployer le serveur Premium » › Run workflow.
+# Les secrets se saisissent dans Settings › Secrets and variables › Actions (jamais dans le code).
+name: Déployer le serveur Premium
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["server/**", ".github/workflows/deploy-premium.yml"]
+
+concurrency:
+  group: deploy-premium
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier les secrets obligatoires
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$ANTHROPIC_API_KEY" ] || missing="$missing ANTHROPIC_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets GitHub manquants :$missing (Settings › Secrets and variables › Actions)"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Installer
+        run: npm ci
+
+      - name: Tests
+        run: npm test && npm run typecheck
+
+      - name: Base de données D1 (création au premier déploiement)
+        run: |
+          id=$(npx wrangler d1 list --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const db=JSON.parse(s).find(d=>d.name==="equilibrecuisine");process.stdout.write(db?db.uuid:"")})')
+          if [ -z "$id" ]; then
+            npx wrangler d1 create equilibrecuisine
+            id=$(npx wrangler d1 list --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{process.stdout.write(JSON.parse(s).find(d=>d.name==="equilibrecuisine").uuid)})')
+          fi
+          echo "Base D1 : $id"
+          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+          # Schéma idempotent (CREATE TABLE IF NOT EXISTS)
+          npx wrangler d1 execute equilibrecuisine --remote --file=schema.sql --yes
+
+      - name: Déployer le Worker
+        id: deploy
+        run: |
+          npx wrangler deploy | tee deploy.log
+          url=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Secrets du Worker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
+          RTDN_TOKEN: ${{ secrets.RTDN_TOKEN }}
+        run: |
+          # Seuls les secrets renseignés sont envoyés (le compte de service Google peut être ajouté plus tard).
+          node -e '
+            const out = {};
+            for (const k of ["ANTHROPIC_API_KEY", "GOOGLE_SERVICE_ACCOUNT", "RTDN_TOKEN"]) if (process.env[k]) out[k] = process.env[k];
+            require("fs").writeFileSync("secrets.json", JSON.stringify(out));
+            console.log("Secrets envoyés :", Object.keys(out).join(", "));
+          '
+          npx wrangler secret bulk secrets.json
+          rm -f secrets.json
+
+      - name: Vérifier que le serveur répond
+        run: |
+          url="${{ steps.deploy.outputs.url }}"
+          if [ -z "$url" ]; then echo "::warning::Adresse du Worker introuvable dans la sortie de wrangler"; exit 0; fi
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$url/v1/health"; then
+              echo
+              echo "::notice title=Serveur Premium en ligne::$url — à transmettre pour compiler l'application (-PpremiumApiUrl=$url/)"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Le serveur ne répond pas sur $url/v1/health"
+          exit 1
