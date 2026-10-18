@@ -2,6 +2,8 @@
 name = "equilibrecuisine-premium"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
+# Compte Cloudflare (identifiant public, pas un secret). Adresse : https://equilibrecuisine-premium.mamar75014.workers.dev
+account_id = "e740f63a1ff139f51c4eec4c2dcfae6f"
 
 # Aucun appel n'atteint ce serveur depuis la version gratuite de l'application.
 [vars]

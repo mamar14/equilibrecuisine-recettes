@@ -70,7 +70,7 @@ déploie le Worker, installe ses secrets et vérifie qu'il répond. Il n'y a rie
    | Nom | Valeur |
    |---|---|
    | `CLOUDFLARE_API_TOKEN` | le jeton de l'étape 3 |
-   | `CLOUDFLARE_ACCOUNT_ID` | l'identifiant de l'étape 2 |
+   | `CLOUDFLARE_ACCOUNT_ID` | facultatif : déjà dans `wrangler.toml` |
    | `ANTHROPIC_API_KEY` | votre clé Claude (section 3) |
    | `RTDN_TOKEN` | une longue chaîne aléatoire de votre choix (section 5) |
    | `GOOGLE_SERVICE_ACCOUNT` | *plus tard* : tout le contenu du fichier JSON du compte de service (section 2) |
