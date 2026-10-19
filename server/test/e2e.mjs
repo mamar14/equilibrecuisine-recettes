@@ -24,17 +24,6 @@ const subs = {
   "token-expire-000000000001": { state: "SUBSCRIPTION_STATE_EXPIRED", expiry: past, plan: "mensuel", ack: "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED" }
 };
 
-const recipe = {
-  title: "Soupe de potiron", description: "Douce et onctueuse.", emoji: "🎃", category: "Entrée", tags: ["automne"],
-  servings: 4, prepMinutes: 15, cookMinutes: 25, restMinutes: 0, difficulty: 1,
-  ingredients: [{ name: "Potiron", quantity: 800, unit: "g" }, { name: "Oignon jaune", quantity: 1, unit: "pièce" }],
-  steps: [{ text: "Coupe le potiron en cubes.", minutes: 0, heat: "", temperature: 0, utensil: "Couteau", cue: "" },
-    { text: "Fais cuire 25 min.", minutes: 25, heat: "Feu moyen", temperature: 0, utensil: "Faitout", cue: "Potiron tendre" }],
-  equipment: ["Faitout"], storage: "3 jours", makeAhead: "", tips: [], mistakes: [], sides: [],
-  variants: { vegetarian: "", glutenFree: "", cheaper: "", protein: "" },
-  newIngredients: [{ name: "Potiron", category: "Légumes", unit: "g", price: 2.5, kcal: 26, protein: 1, carbs: 6, fat: 0, fiber: 1, sugar: 3, satFat: 0, gramsPerPiece: 0, diet: 0 }]
-};
-
 const mock = createServer(async (req, res) => {
   let body = "";
   for await (const c of req) body += c;
@@ -58,13 +47,11 @@ const mock = createServer(async (req, res) => {
     assert.equal(req.headers["x-api-key"], "cle-test");
     assert.equal(r.output_config.format.type, "json_schema");
     let out;
-    if (r.system.includes("analyser la photo")) {
-      out = { isFood: true, dishName: "Soupe de potiron", confidence: 0.8, observations: "Velouté orange.", perPortion: { grams: 300, kcal: 120, protein: 3, carbs: 18, fat: 4 }, recipe };
-    } else if (r.system.includes("nutritionniste français bienveillant")) {
-      out = { summary: "Voici mes idées.", picks: [{ id: 2, reason: "Rapide" }, { id: 999, reason: "inexistant" }, { id: 2, reason: "doublon" }], ideas: [{ title: "Gratin", pitch: "Réconfortant" }] };
-    } else {
-      out = recipe;
-    }
+    assert.match(r.system, /analysez la photo|analyses la photo/);
+    // Image « B… » : pas un plat (l'analyse échoue et ne doit pas être décomptée).
+    out = r.messages[0].content[0].source.data.startsWith("B")
+      ? { isFood: false, dishName: "", confidence: 0, observations: "", perPortion: { grams: 0, kcal: 0, protein: 0, carbs: 0, fat: 0 }, keywords: [] }
+      : { isFood: true, dishName: "Soupe de potiron", confidence: 0.8, observations: "Velouté orange.", perPortion: { grams: 300, kcal: 120, protein: 3, carbs: 18, fat: 4 }, keywords: ["Soupe", "potiron"] };
     return send(200, { content: [{ type: "text", text: JSON.stringify(out) }], stop_reason: "end_turn" });
   }
   send(404, {});
@@ -79,7 +66,6 @@ writeFileSync(".dev.vars", [
   `RTDN_TOKEN="secret-rtdn-test"`,
   `GOOGLE_API_BASE="http://127.0.0.1:${MOCK_PORT}"`,
   `ANTHROPIC_API_BASE="http://127.0.0.1:${MOCK_PORT}"`,
-  `QUOTA_PHOTO="2"`,
   // Code de test « TEST-CODE-ACCES-1 » (le vrai code n'est jamais dans le dépôt)
   `ACCESS_CODE_SHA256="${createHash("sha256").update("TEST-CODE-ACCES-1").digest("hex")}"`
 ].join("\n"));
@@ -110,7 +96,7 @@ async function main() {
   const step = (name) => console.log("✓", name);
 
   // Sans session : refusé
-  assert.equal((await call("POST", "/v1/ai/recipe", { prompt: "soupe" })).status, 401);
+  assert.equal((await call("POST", "/v1/ai/photo", { image: "A".repeat(400) })).status, 401);
   step("route IA sans session → 401");
 
   // Faux achat, mauvais produit, abonnement expiré
@@ -136,7 +122,10 @@ async function main() {
 
   const me = await call("GET", "/v1/me", undefined, token);
   assert.equal(me.body.premium, true);
-  assert.equal(me.body.usage.photo.limit, 2);
+  assert.equal(me.body.usage.photo.limit, 5);
+  assert.equal(me.body.usage.photo.period, "month");
+  assert.ok(me.body.usage.photo.resetsAt > Date.now());
+  assert.equal(me.body.usage.recipe, undefined, "plus de génération de recettes");
   step("/v1/me");
 
   // Code d'accès des examinateurs
@@ -150,41 +139,39 @@ async function main() {
   assert.equal(reviewSync.status, 200, JSON.stringify(reviewSync.body));
   step("code d'accès : mauvais code refusé, bon code → Premium");
 
-  const gen = await call("POST", "/v1/ai/recipe", { prompt: "soupe d'automne", servings: 4, knownIngredients: ["Oignon jaune"] }, token);
-  assert.equal(gen.status, 200, JSON.stringify(gen.body));
-  assert.equal(gen.body.library.recipes[0].title, "Soupe de potiron");
-  assert.equal(gen.body.library.recipes[0].source, "Créée avec l'IA");
-  assert.deepEqual(gen.body.library.ingredients.map((i) => i.name), ["Potiron"]);
-  assert.equal(gen.body.usage.used, 1);
-  assert.equal(calls.claude.at(-1).model, "claude-haiku-5-5");
-  assert.match(calls.claude.at(-1).system, /Oignon jaune/);
-  step("génération IA");
+  // Fonctions IA retirées : plus aucune route
+  for (const path of ["/v1/ai/recipe", "/v1/ai/import-url", "/v1/ai/suggestions"]) {
+    assert.equal((await call("POST", path, { prompt: "soupe", url: "https://x.fr" }, token)).status, 404, path);
+  }
+  step("génération de recettes, import web et suggestions supprimés (404)");
 
   const photo = await call("POST", "/v1/ai/photo", { image: "A".repeat(400), mediaType: "image/jpeg" }, token);
   assert.equal(photo.status, 200, JSON.stringify(photo.body));
   assert.equal(photo.body.dish.name, "Soupe de potiron");
+  assert.deepEqual(photo.body.dish.keywords, ["soupe", "potiron"]);
+  assert.equal(photo.body.library, undefined, "aucune recette générée");
+  assert.equal(photo.body.usage.used, 1);
+  assert.equal(photo.body.usage.limit, 5);
   assert.equal(calls.claude.at(-1).messages[0].content[0].type, "image");
-  await call("POST", "/v1/ai/photo", { image: "A".repeat(400), mediaType: "image/jpeg" }, token);
-  const third = await call("POST", "/v1/ai/photo", { image: "A".repeat(400), mediaType: "image/jpeg" }, token);
-  assert.equal(third.status, 429);
-  assert.equal(third.body.error, "quota");
-  step("analyse photo + quota quotidien (429)");
+  assert.doesNotMatch(calls.claude.at(-1).system, /recette pour/);
 
+  const notFood = await call("POST", "/v1/ai/photo", { image: "B".repeat(400), mediaType: "image/jpeg" }, token);
+  assert.equal(notFood.status, 422);
   const badImg = await call("POST", "/v1/ai/photo", { image: "A".repeat(400), mediaType: "image/gif" }, token);
   assert.equal(badImg.status, 400);
+  assert.equal((await call("GET", "/v1/me", undefined, token)).body.usage.photo.used, 1, "échecs non décomptés");
 
-  const sug = await call("POST", "/v1/ai/suggestions", {
-    profile: { householdSize: 2, calorieTarget: 2000, dailyBudget: 15 },
-    favorites: ["Soupe"], recipes: [{ id: 1, title: "Gratin", category: "Plat", kcal: 500, cost: 1.2, minutes: 40 }, { id: 2, title: "Salade", category: "Entrée", kcal: 200, cost: 0.8, minutes: 10 }]
-  }, token);
-  assert.equal(sug.status, 200, JSON.stringify(sug.body));
-  assert.deepEqual(sug.body.picks.map((p) => p.id), [2], "id inexistant et doublon filtrés");
-  step("suggestions personnalisées");
-
-  const ssrf = await call("POST", "/v1/ai/import-url", { url: "http://127.0.0.1:8080/admin" }, token);
-  assert.equal(ssrf.status, 400);
-  assert.equal((await call("GET", "/v1/me", undefined, token)).body.usage.import.used, 0, "erreur = quota rendu");
-  step("import URL : adresse interne refusée, quota rendu");
+  for (let i = 2; i <= 5; i++) {
+    const ok = await call("POST", "/v1/ai/photo", { image: "A".repeat(400) }, token);
+    assert.equal(ok.body.usage.used, i);
+  }
+  const sixth = await call("POST", "/v1/ai/photo", { image: "A".repeat(400) }, token);
+  assert.equal(sixth.status, 429);
+  assert.equal(sixth.body.error, "quota");
+  assert.equal(sixth.body.period, "month");
+  assert.match(sixth.body.message, /^Vous avez utilisé vos 5 analyses photo ce mois-ci\. Elles seront renouvelées le 1er /);
+  assert.equal((await call("GET", "/v1/me", undefined, token)).body.usage.photo.used, 5);
+  step("analyse photo : 5 par mois, échecs non décomptés, 6e refusée (429)");
 
   // Synchronisation
   const lib = { version: 2, ingredients: [], recipes: [{ title: "A", ingredients: [] }], favorites: ["A"], mealPlan: [] };
@@ -218,7 +205,7 @@ async function main() {
   subs["token-annuel-valide-000001"] = { state: "SUBSCRIPTION_STATE_EXPIRED", expiry: past, plan: "annuel", ack: "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED" };
   const data = Buffer.from(JSON.stringify({ packageName: "com.equilibrecuisine.app", subscriptionNotification: { notificationType: 13, purchaseToken: "token-annuel-valide-000001", subscriptionId: "premium" } })).toString("base64");
   assert.equal((await call("POST", "/v1/rtdn?token=secret-rtdn-test", { message: { data } })).status, 204);
-  const after = await call("POST", "/v1/ai/recipe", { prompt: "soupe" }, token);
+  const after = await call("POST", "/v1/ai/photo", { image: "A".repeat(400) }, token);
   assert.equal(after.status, 402);
   assert.equal(after.body.error, "premium_required");
   assert.equal((await call("GET", "/v1/me", undefined, token)).body.premium, false);

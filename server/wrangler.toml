@@ -12,13 +12,11 @@ PACKAGE_NAME = "com.equilibrecuisine.app"
 PRODUCT_ID = "premium"
 BASE_PLAN_MONTHLY = "mensuel"
 BASE_PLAN_YEARLY = "annuel"
-# Modèle Claude : Haiku = coût minimal. claude-sonnet-5-5 pour des recettes plus fines (≈ 20× plus cher).
+# Modèle Claude pour l'analyse photo : Haiku = coût minimal.
 CLAUDE_MODEL = "claude-haiku-5-5"
-# Quotas quotidiens par abonné : protègent la marge (3,99 €/mois) contre un usage abusif.
-QUOTA_RECIPE = "15"
-QUOTA_IMPORT = "20"
-QUOTA_PHOTO = "8"
-QUOTA_SUGGEST = "8"
+# Seule fonction IA : l'analyse photo, limitée à 5 par abonné et par mois (renouvelée le 1er du mois).
+QUOTA_PHOTO_MONTH = "5"
+# Quotas quotidiens anti-abus du cloud.
 QUOTA_SYNC = "60"
 QUOTA_BACKUP = "12"
 MAX_BACKUPS = "10"

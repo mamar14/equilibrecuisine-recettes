@@ -11,7 +11,7 @@ elle fonctionne entièrement sur le téléphone, sans serveur et sans aucun coû
  Room, recettes, courses      Google Play Billing ──achat──► Google Play
  → aucun appel serveur        │
                               └─ HTTPS + session ──► Worker Cloudflare ──► API Google Play (vérification)
-                                                      │ D1 : abonnements,  ──► API Claude (IA)
+                                                      │ D1 : abonnements,  ──► API Claude (photo)
                                                       │ sessions, quotas,
                                                       │ synchro, sauvegardes
 ```
@@ -22,7 +22,8 @@ elle fonctionne entièrement sur le téléphone, sans serveur et sans aucun coû
 - **Notifications Google** (RTDN) : résiliation, renouvellement et remboursement sont pris en compte en temps réel.
 - **Identité** : aucun compte ni e-mail. L'application génère un identifiant aléatoire, que Google Play enregistre
   dans l'achat (`obfuscatedAccountId`). « Restaurer mes achats » le retrouve sur un nouveau téléphone, avec les données cloud.
-- **Quotas quotidiens** par abonné (wrangler.toml) : ils plafonnent le coût de l'IA.
+- **Quota photo mensuel** par abonné : `QUOTA_PHOTO_MONTH = "5"` (wrangler.toml). Une analyse qui échoue est rendue ;
+  le compteur repart de zéro le 1er de chaque mois (UTC). C'est la seule fonction qui utilise l'IA.
 
 ## 1. Google Play Console
 
@@ -117,8 +118,11 @@ Vérifiez : `https://…workers.dev/v1/health` doit répondre `{"ok":true}`.
 ```
 
 Importez le fichier `.aab` dans la Play Console (test interne), installez l'application depuis le lien de test,
-puis achetez avec un compte testeur. Sans `-PpremiumApiUrl`, l'abonnement fonctionne mais les fonctions IA et cloud
+puis achetez avec un compte testeur. Sans `-PpremiumApiUrl`, l'abonnement fonctionne mais l'analyse photo et le cloud
 affichent « Service Premium pas encore en ligne ».
+
+Les recettes de la semaine n'utilisent pas ce serveur : l'application interroge directement TheMealDB. Pour une
+application publiée, ajoutez votre clé TheMealDB (abonnement Patreon du site) : `-PmealDbKey=<clé>`.
 
 ## Coûts (ordre de grandeur, tarifs publiés en octobre 2026)
 
@@ -127,17 +131,16 @@ affichent « Service Premium pas encore en ligne ».
 | Utilisateurs gratuits | — | **0 €** : aucun appel serveur |
 | Cloudflare Workers | 100 000 requêtes / jour | 5 $/mois (forfait payant) |
 | Cloudflare D1 | 5 Go, 5 millions de lectures / jour | à l'usage |
-| Claude Haiku 5.5 | — | une recette ≈ 2 500 jetons en entrée et 2 000 en sortie, soit environ 0,1 centime |
+| Claude Haiku 5.5 | — | une analyse photo ≈ 1 600 jetons en entrée et 300 en sortie, soit moins de 0,1 centime |
 | Google Play | — | commission de 15 % sur les abonnements |
 
-Pour un abonné à 3,99 €/mois, la commission Google laisse environ 3,39 € ; même un usage intensif de l'IA (quotas au
-maximum chaque jour) reste de l'ordre de quelques dizaines de centimes par mois avec Haiku. Pour des recettes plus fines,
-passez `CLAUDE_MODEL` à `claude-sonnet-5-5` (environ 20 fois plus cher) et réduisez les quotas en conséquence.
+Pour un abonné à 3,99 €/mois, la commission Google laisse environ 3,39 € ; les 5 analyses photo du mois coûtent moins
+d'un demi-centime avec Haiku. La traduction des recettes se fait sur le téléphone (ML Kit) : aucun coût serveur.
 
 ## Tests
 
 ```bash
-npm test          # logique pure : vérification des états Google, conversion IA, import web, signature JWT
+npm test          # logique pure : états Google, quota mensuel, validation photo, signature JWT
 npm run test:e2e  # Worker réel en local (wrangler dev + D1 locale), Google Play et Claude simulés
 npm run typecheck
 ```
@@ -148,15 +151,12 @@ npm run typecheck
 |---|---|---|---|
 | POST | `/v1/purchases/verify` | vérifie un achat auprès de Google, crée une session | — (jeton d'achat) |
 | POST | `/v1/rtdn?token=…` | notifications Google Play | — (secret) |
-| GET | `/v1/me` | état, quotas du jour, synchro, sauvegardes | session |
+| GET | `/v1/me` | état, analyses photo du mois, synchro, sauvegardes | session |
 | DELETE | `/v1/me/data` | efface les données cloud (RGPD) | session |
-| POST | `/v1/ai/recipe` | génération de recette | oui |
-| POST | `/v1/ai/import-url` | import d'une page web | oui |
-| POST | `/v1/ai/photo` | analyse d'une photo | oui |
-| POST | `/v1/ai/suggestions` | suggestions personnalisées | oui |
+| POST | `/v1/ai/photo` | analyse d'une photo (5 par mois) | oui |
 | GET, PUT | `/v1/sync` | copie synchronisée (versionnée, 409 si périmée) | oui |
 | GET, POST | `/v1/backups` | liste, création (10 conservées, 1 automatique par jour) | oui |
 | GET, DELETE | `/v1/backups/{id}` | lecture, suppression | oui |
 
 Codes d'erreur : 401 session expirée, 402 abonnement requis, 409 conflit de synchronisation, 422 contenu non
-exploitable, 429 quota du jour atteint. Le champ `message` est en français et s'affiche tel quel dans l'application.
+exploitable, 429 quota photo du mois atteint (`limit`, `period`, `resetsAt`). Le champ `message` est en français et s'affiche tel quel dans l'application.

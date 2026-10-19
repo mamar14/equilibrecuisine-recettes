@@ -2,14 +2,13 @@
  * Serveur Premium d'EquilibreCuisine (Cloudflare Worker).
  *
  * Seuls les abonnés appellent ce serveur : la version gratuite de l'application fonctionne entièrement
- * hors ligne et ne génère aucun coût. Chaque fonction payante (IA, cloud) vérifie l'abonnement à chaque
+ * hors ligne et ne génère aucun coût. Fonctions : analyse photo (5 par mois), synchronisation et sauvegardes. Chaque fonction payante (IA, cloud) vérifie l'abonnement à chaque
  * appel, côté serveur : modifier l'application ne permet pas de contourner le paiement.
  */
 import {
   authenticate, createSession, latestSubscription, redeemAccessCode, refreshFromGoogle, requirePremium, statusOf
 } from "./accounts.ts";
-import { analyzePhoto, generateRecipe, importFromUrl, suggest, validatePhoto } from "./ai.ts";
-import { validatePublicUrl } from "./urlImport.ts";
+import { analyzePhoto, validatePhoto } from "./photo.ts";
 import {
   createBackup, deleteBackup, deleteCloudData, getBackup, getSnapshot, listBackups, MAX_LIBRARY_BYTES, putSnapshot
 } from "./cloud.ts";
@@ -18,7 +17,7 @@ import type { Env } from "./env.ts";
 import { planOf } from "./entitlement.ts";
 import { playClient, type PlayClient } from "./google.ts";
 import { ApiError, Errors, errorResponse, json, readJson, str } from "./http.ts";
-import { consume, refund, usageToday, type QuotaKind } from "./quota.ts";
+import { consume, currentUsage, refund, type QuotaKind } from "./quota.ts";
 
 const SMALL_BODY = 64_000;
 const PHOTO_BODY = 7_000_000;
@@ -100,7 +99,7 @@ export function createHandler(deps: Deps = defaultDeps) {
           .first<{ version: number; updated_at: number; device: string | null; recipes: number }>();
         return json({
           ...status,
-          usage: await usageToday(env, userId, now),
+          usage: await currentUsage(env, userId, now),
           sync: snapshot ? { version: snapshot.version, updatedAt: snapshot.updated_at, device: snapshot.device, recipes: snapshot.recipes } : null,
           backups: await listBackups(env, userId)
         });
@@ -122,23 +121,11 @@ export function createHandler(deps: Deps = defaultDeps) {
         }
       };
 
-      if (method === "POST" && path === "/v1/ai/recipe") {
-        const body = await readJson<Record<string, unknown>>(request, SMALL_BODY);
-        return await metered("recipe", () => generateRecipe(env, body));
-      }
-      if (method === "POST" && path === "/v1/ai/import-url") {
-        const body = await readJson<Record<string, unknown>>(request, SMALL_BODY);
-        validatePublicUrl(str(body.url, 2000));
-        return await metered("import", () => importFromUrl(env, body));
-      }
+      // Seule fonction IA : analyse photo, 5 par mois. Image validée AVANT le décompte ; échec = analyse rendue.
       if (method === "POST" && path === "/v1/ai/photo") {
         const body = await readJson<Record<string, unknown>>(request, PHOTO_BODY);
         validatePhoto(body);
         return await metered("photo", () => analyzePhoto(env, body));
-      }
-      if (method === "POST" && path === "/v1/ai/suggestions") {
-        const body = await readJson<Record<string, unknown>>(request, 200_000);
-        return await metered("suggest", () => suggest(env, body));
       }
 
       if (path === "/v1/sync") {

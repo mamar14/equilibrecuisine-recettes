@@ -33,11 +33,26 @@ export const Errors = {
     new ApiError(409, "conflict", "Les données ont changé sur un autre appareil.", extra),
   tooLarge: () => new ApiError(413, "too_large", "Données trop volumineuses."),
   unprocessable: (code: string, message: string) => new ApiError(422, code, message),
-  quota: (limit: number) =>
-    new ApiError(429, "quota", `Limite quotidienne atteinte (${limit} par jour). Elle sera réinitialisée demain.`, { limit }),
+  quota: (limit: number, period: "day" | "month" = "day", resetsAt = 0) =>
+    new ApiError(
+      429,
+      "quota",
+      period === "month"
+        ? `Vous avez utilisé vos ${limit} analyses photo ce mois-ci. Elles seront renouvelées le ${frenchDate(resetsAt)}.`
+        : `Limite quotidienne atteinte (${limit} par jour). Elle sera réinitialisée demain.`,
+      { limit, period, resetsAt }
+    ),
   upstream: (message = "Service momentanément indisponible, réessayez dans un instant.") =>
     new ApiError(503, "unavailable", message)
 };
+
+/** « 1er novembre 2026 » (date de renouvellement d'un quota mensuel). */
+export function frenchDate(ms: number): string {
+  const d = new Date(ms);
+  const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  const day = d.getUTCDate();
+  return `${day === 1 ? "1er" : day} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
 
 /** Lit un corps JSON en limitant sa taille (octets). */
 export async function readJson<T>(request: Request, maxBytes: number): Promise<T> {

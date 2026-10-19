@@ -25,7 +25,7 @@
 <main>
   <p><a href="./">← EquilibreCuisine</a></p>
   <h1>Politique de confidentialité</h1>
-  <p class="muted">Application Android EquilibreCuisine (Mijo sur Google Play) · en vigueur le 18 octobre 2026</p>
+  <p class="muted">Application Android EquilibreCuisine (Mijo sur Google Play) · en vigueur le 19 octobre 2026 (version 3.0)</p>
 
   <section>
     <h2>En résumé</h2>
@@ -42,7 +42,8 @@
     <p>Deux fonctions facultatives se connectent à Internet, sans transmettre vos données personnelles :</p>
     <table>
       <tr><th>Fonction</th><th>Service contacté</th><th>Ce qui est envoyé</th></tr>
-      <tr><td>Nouvelles recettes de la semaine</td><td>GitHub Pages (GitHub, Inc.)</td><td>Une simple demande de téléchargement du fichier de recettes</td></tr>
+      <tr><td>Recettes de la semaine (Premium)</td><td>TheMealDB</td><td>Une simple demande de recette au hasard ; aucune donnée personnelle</td></tr>
+      <tr><td>Traduction des recettes en français</td><td>Google ML Kit (sur le téléphone)</td><td>Téléchargement unique du modèle de traduction ; les textes sont traduits sur le téléphone et ne sont pas envoyés</td></tr>
       <tr><td>Mise à jour automatique des prix</td><td>Open Prices (Open Food Facts) ou l'API de prix que vous avez configurée</td><td>Le nom de la catégorie de produit recherchée (ex. « carottes »)</td></tr>
     </table>
     <p class="muted">Comme pour toute connexion Internet, ces services reçoivent techniquement l'adresse IP de l'appareil. Ces deux fonctions se désactivent dans Réglages.</p>
@@ -54,14 +55,11 @@
     <p><strong>Identifiant anonyme.</strong> L'application crée un identifiant aléatoire, enregistré par Google Play avec votre achat. Il permet de retrouver vos données cloud sur un nouveau téléphone (« Restaurer mes achats ») sans créer de compte.</p>
     <table>
       <tr><th>Fonction Premium</th><th>Données transmises</th><th>Conservation</th></tr>
-      <tr><td>Recettes créées par l'IA</td><td>Votre demande (texte), la liste des noms d'ingrédients de votre bibliothèque</td><td>Non conservées par nos serveurs</td></tr>
-      <tr><td>Import depuis une adresse web</td><td>L'adresse de la page ; notre serveur lit la page publique correspondante</td><td>Non conservées</td></tr>
-      <tr><td>Analyse d'une photo de plat</td><td>La photo choisie ou prise (réduite à 1280 px)</td><td>Non conservée par nos serveurs</td></tr>
-      <tr><td>Suggestions personnalisées</td><td>Titres, catégories, calories, coûts et durées de vos recettes ; favoris ; repas planifiés ; profil (foyer, objectif calorique, budget)</td><td>Non conservées</td></tr>
+      <tr><td>Analyse d'une photo de plat (5 par mois)</td><td>La photo choisie ou prise (réduite à 1280 px)</td><td>Non conservée par nos serveurs</td></tr>
       <tr><td>Synchronisation et sauvegardes</td><td>Votre bibliothèque complète (recettes, ingrédients, prix, favoris, planning), hors photos ; nom du modèle de téléphone</td><td>Jusqu'à leur suppression par vous ; 10 sauvegardes au plus</td></tr>
     </table>
-    <p><strong>Traitement par l'IA.</strong> Les fonctions d'IA sont fournies par Anthropic (API Claude), qui traite les demandes pour notre compte afin de produire la réponse. Selon ses conditions commerciales, Anthropic n'utilise pas ces données pour entraîner ses modèles.</p>
-    <p><strong>Hébergement.</strong> Le serveur Premium fonctionne sur Cloudflare (Workers et base de données D1). Toutes les communications sont chiffrées (HTTPS). Nous conservons aussi un compteur d'utilisation quotidien des fonctions IA, qui sert à appliquer les limites d'usage.</p>
+    <p><strong>Traitement par l'IA.</strong> L'analyse photo, seule fonction utilisant l'IA, est fournie par Anthropic (API Claude), qui traite la photo pour notre compte afin de produire la réponse. L'application ne génère aucune recette par IA. Selon ses conditions commerciales, Anthropic n'utilise pas ces données pour entraîner ses modèles.</p>
+    <p><strong>Hébergement.</strong> Le serveur Premium fonctionne sur Cloudflare (Workers et base de données D1). Toutes les communications sont chiffrées (HTTPS). Nous conservons aussi un compteur mensuel des analyses photo, qui sert à appliquer la limite de 5 analyses par mois.</p>
   </section>
 
   <section>

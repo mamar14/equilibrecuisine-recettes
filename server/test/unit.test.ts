@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { evaluateSubscription, planOf } from "../src/entitlement.ts";
-import { toLibrary, nameKey, type AiRecipe } from "../src/recipe.ts";
-import { describeJsonLd, extractJsonLdRecipe, isoMinutes, validatePublicUrl, visibleText } from "../src/urlImport.ts";
+import { periodKey, periodResetsAt, quotaPeriod } from "../src/quota.ts";
+import { validatePhoto } from "../src/photo.ts";
+import { Errors, frenchDate } from "../src/http.ts";
 import { signServiceAccountJwt } from "../src/google.ts";
 import { gunzip, gzip, safeEqual, sha256Hex } from "../src/crypto.ts";
 
@@ -53,102 +54,24 @@ test("déjà acquitté : pas de nouvel accusé de réception", () => {
   assert.equal(e.needsAcknowledge, false);
 });
 
-const aiRecipe: AiRecipe = {
-  title: "Curry de pois chiches",
-  description: "Un curry doux et économique.",
-  emoji: "🍛",
-  category: "Plat",
-  tags: ["végétarien", "économique"],
-  servings: 4,
-  prepMinutes: 15,
-  cookMinutes: 25,
-  restMinutes: 0,
-  difficulty: 1,
-  ingredients: [
-    { name: "Pois chiches", quantity: 400, unit: "g" },
-    { name: "Lait de coco", quantity: 400, unit: "ml" },
-    { name: "Oignon jaune", quantity: 1, unit: "pièce" },
-    { name: "Curcuma", quantity: 1, unit: "unité inventée" }
-  ],
-  steps: [
-    { text: "Émince l'oignon.", minutes: 0, heat: "", temperature: 0, utensil: "Couteau", cue: "" },
-    { text: "Fais revenir 5 min.", minutes: 5, heat: "Feu moyen", temperature: 0, utensil: "Sauteuse", cue: "Oignon translucide" },
-    { text: "", minutes: 3, heat: "", temperature: 0, utensil: "", cue: "" }
-  ],
-  equipment: ["Sauteuse"],
-  storage: "3 jours au frais.",
-  makeAhead: "",
-  tips: ["Ajoute du citron."],
-  mistakes: [],
-  sides: ["Riz basmati"],
-  variants: { vegetarian: "", glutenFree: "", cheaper: "", protein: "" },
-  newIngredients: [
-    { name: "Lait de coco", category: "Liquides & bouillons", unit: "ml", price: 4.2, kcal: 180, protein: 2, carbs: 3, fat: 18, fiber: 0, sugar: 2, satFat: 16, gramsPerPiece: 0, diet: 0 },
-    { name: "Oignon jaune", category: "Légumes", unit: "piece", price: 0, kcal: 40, protein: 1, carbs: 9, fat: 0, fiber: 2, sugar: 4, satFat: 0, gramsPerPiece: 120, diet: 0 },
-    { name: "Pois chiches", category: "Légumineuses", unit: "g", price: 3, kcal: 120, protein: 7, carbs: 18, fat: 2, fiber: 5, sugar: 1, satFat: 0, gramsPerPiece: 0, diet: 0 },
-    { name: "Ingrédient fantôme", category: "Autres", unit: "g", price: 10, kcal: 1, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, satFat: 0, gramsPerPiece: 0, diet: 0 }
-  ]
-};
-
-test("conversion IA → bibliothèque : bornes, unités, ingrédients connus préservés, jamais de prix nul", () => {
-  const lib = toLibrary(aiRecipe, ["pois CHICHES"], { source: "Créée avec l'IA" }) as any;
-  const r = lib.recipes[0];
-  assert.equal(r.title, "Curry de pois chiches");
-  assert.equal(r.ingredients[3].unit, "g", "unité inconnue → g");
-  assert.equal(r.steps.length, 2, "étape vide retirée");
-  assert.equal(r.steps[0].minutes, undefined, "0 min = pas de minuteur");
-  assert.equal(r.steps[1].heat, "Feu moyen");
-  const names = lib.ingredients.map((i: any) => i.name);
-  assert.deepEqual(names, ["Lait de coco", "Oignon jaune"], "connu et fantôme exclus");
-  const onion = lib.ingredients[1];
-  assert.equal(onion.price, undefined, "prix 0 → absent (affiché « — »)");
-  assert.equal(onion.gramsPerPiece, 120);
-  assert.equal(lib.ingredients[0].priceSource, "Estimation IA");
+test("quota photo mensuel : clé, renouvellement le 1er du mois suivant, message en français", () => {
+  const oct = Date.parse("2026-10-19T10:00:00Z");
+  assert.equal(periodKey("photo", oct), "M2026-10");
+  assert.equal(periodKey("sync", oct), "2026-10-19");
+  assert.equal(quotaPeriod("photo"), "month");
+  assert.equal(new Date(periodResetsAt("photo", oct)).toISOString(), "2026-11-01T00:00:00.000Z");
+  assert.equal(new Date(periodResetsAt("photo", Date.parse("2026-12-31T23:00:00Z"))).toISOString(), "2027-01-01T00:00:00.000Z");
+  assert.equal(new Date(periodResetsAt("backup", oct)).toISOString(), "2026-10-20T00:00:00.000Z");
+  const e = Errors.quota(5, "month", periodResetsAt("photo", oct));
+  assert.equal(e.status, 429);
+  assert.equal(e.message, "Vous avez utilisé vos 5 analyses photo ce mois-ci. Elles seront renouvelées le 1er novembre 2026.");
+  assert.equal(frenchDate(Date.parse("2026-03-15T00:00:00Z")), "15 mars 2026");
 });
 
-test("recette sans ingrédient : refusée", () => {
-  assert.throws(() => toLibrary({ ...aiRecipe, ingredients: [] }, [], { source: "x" }));
-});
-
-test("nameKey : accents et casse ignorés", () => {
-  assert.equal(nameKey("Crème fraîche "), nameKey("creme FRAICHE"));
-});
-
-const page = `<!doctype html><html><head><title>Quiche lorraine</title>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage"},
-{"@type":["Recipe"],"name":"Quiche lorraine &amp; salade","recipeYield":"6 personnes","prepTime":"PT20M","cookTime":"PT1H5M",
-"recipeIngredient":["200 g de lardons","3 œufs","20 cl de crème"],
-"recipeInstructions":[{"@type":"HowToSection","name":"Pâte","itemListElement":[{"@type":"HowToStep","text":"Étale la pâte."}]},
-{"@type":"HowToStep","text":"Fais cuire 40 min à 180 °C."}]}]}</script></head>
-<body><nav>Menu</nav><p>Bonjour</p><script>var x=1</script></body></html>`;
-
-test("JSON-LD schema.org Recipe extrait (graphe, sections, entités, durées ISO)", () => {
-  const r = extractJsonLdRecipe(page);
-  assert.ok(r);
-  const text = describeJsonLd(r!);
-  assert.match(text, /Titre : Quiche lorraine & salade/);
-  assert.match(text, /cuisson 65 min/);
-  assert.match(text, /- 3 œufs/);
-  assert.match(text, /— Pâte —/);
-  assert.match(text, /Fais cuire 40 min/);
-  assert.equal(isoMinutes("PT1H30M"), 90);
-  assert.equal(isoMinutes("P1DT2H"), 1560);
-  assert.equal(isoMinutes("n'importe quoi"), 0);
-});
-
-test("texte visible : scripts et menus retirés", () => {
-  const t = visibleText(page);
-  assert.match(t, /Bonjour/);
-  assert.doesNotMatch(t, /var x/);
-  assert.doesNotMatch(t, /Menu/);
-});
-
-test("adresses refusées (SSRF) et acceptées", () => {
-  for (const bad of ["ftp://site.fr/x", "http://localhost/x", "http://127.0.0.1/", "http://192.168.1.2/", "http://10.0.0.1/",
-    "http://[::1]/", "http://intranet/", "https://site.fr:8080/", "https://user:pw@site.fr/", "pas une url", "http://172.20.1.1/"]) {
-    assert.throws(() => validatePublicUrl(bad), bad);
-  }
-  assert.equal(validatePublicUrl("https://www.marmiton.org/recettes/x.aspx#avis").toString(), "https://www.marmiton.org/recettes/x.aspx");
+test("photo : image contrôlée avant tout décompte", () => {
+  assert.throws(() => validatePhoto({ image: "A".repeat(400), mediaType: "image/gif" }));
+  assert.throws(() => validatePhoto({ image: "court" }));
+  assert.equal(validatePhoto({ image: "A".repeat(400) }).mediaType, "image/jpeg");
 });
 
 test("JWT du compte de service signé RS256 et vérifiable", async () => {

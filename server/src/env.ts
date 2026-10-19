@@ -5,10 +5,8 @@ export interface Env {
   BASE_PLAN_MONTHLY: string;
   BASE_PLAN_YEARLY: string;
   CLAUDE_MODEL: string;
-  QUOTA_RECIPE: string;
-  QUOTA_IMPORT: string;
-  QUOTA_PHOTO: string;
-  QUOTA_SUGGEST: string;
+  /** Analyses photo par abonné et par mois. */
+  QUOTA_PHOTO_MONTH: string;
   QUOTA_SYNC: string;
   QUOTA_BACKUP: string;
   MAX_BACKUPS: string;
